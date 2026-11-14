@@ -32,6 +32,7 @@ from _pytest.main import Session
 from _pytest.nodeid import NodeId
 from _pytest.nodes import Directory
 from _pytest.nodes import File
+from _pytest.python import Class
 from _pytest.reports import TestReport
 
 
@@ -277,7 +278,7 @@ class LFPluginCollWrapper:
                 reverse=True,
             )
 
-        elif isinstance(collector, File):
+        elif isinstance(collector, File | Class):
             if collector.path in self.lfplugin._last_failed_paths:
                 result = res.result
                 lastfailed = self.lfplugin.lastfailed
