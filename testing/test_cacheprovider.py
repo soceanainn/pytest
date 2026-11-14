@@ -634,6 +634,35 @@ class TestLastFailed:
         lastfailed = rlf(fail_import=0, fail_run=1)
         assert list(lastfailed) == ["test_maybe.py::test_hello"]
 
+    def test_lastfailed_recovered_collection_failure_after_test_failure(
+        self, pytester: Pytester, monkeypatch: MonkeyPatch
+    ) -> None:
+        pytester.makepyfile(
+            # Collect this cached test failure first to activate early filtering.
+            test_a="def test_fail(): assert False",
+            test_b="""
+                import os
+
+                if os.environ["FAILIMPORT"] == "1":
+                    raise ImportError("collection failed")
+
+                def test_one(): pass
+                def test_two(): pass
+            """,
+        )
+        monkeypatch.setenv("FAILIMPORT", "1")
+        result = pytester.runpytest("--continue-on-collection-errors")
+        result.assert_outcomes(failed=1, errors=1)
+        assert self.get_cached_last_failed(pytester) == [
+            "test_a.py::test_fail",
+            "test_b.py",
+        ]
+
+        monkeypatch.setenv("FAILIMPORT", "0")
+        result = pytester.runpytest("--lf")
+        # A repaired collection failure should select all tests in that file.
+        result.assert_outcomes(failed=1, passed=2)
+
     def test_lastfailed_failure_subset(
         self, pytester: Pytester, monkeypatch: MonkeyPatch
     ) -> None:
@@ -820,9 +849,9 @@ class TestLastFailed:
         result = pytester.runpytest("--last-failed")
         result.stdout.fnmatch_lines(
             [
-                "collected 1 item",
+                "collected 2 items / 1 deselected / 1 selected",
                 "run-last-failure: rerun previous 1 failure (skipped 1 file)",
-                "*= 1 failed in *",
+                "*= 1 failed, 1 deselected in *",
             ]
         )
         assert self.get_cached_last_failed(pytester) == ["test_foo.py::test_foo_4"]
@@ -935,9 +964,9 @@ class TestLastFailed:
         result = pytester.runpytest("--lf")
         result.stdout.fnmatch_lines(
             [
-                "collected 2 items",
+                "collected 5 items / 3 deselected / 2 selected",
                 "run-last-failure: rerun previous 2 failures (skipped 1 file)",
-                "*= 2 failed in *",
+                "*= 2 failed, 3 deselected in *",
             ]
         )
 
@@ -952,9 +981,9 @@ class TestLastFailed:
         result = pytester.runpytest("--lf")
         result.stdout.fnmatch_lines(
             [
-                "collected 2 items",
+                "collected 5 items / 3 deselected / 2 selected",
                 "run-last-failure: rerun previous 2 failures (skipped 2 files)",
-                "*= 2 failed in *",
+                "*= 2 failed, 3 deselected in *",
             ]
         )
 

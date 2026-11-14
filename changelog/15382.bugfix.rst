@@ -1,0 +1,1 @@
+Fixed :option:`--last-failed` skipping tests in files whose collection errors were fixed when another previously failed test was collected first.

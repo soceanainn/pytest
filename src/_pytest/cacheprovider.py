@@ -282,7 +282,7 @@ class LFPluginCollWrapper:
                 result = res.result
                 lastfailed = self.lfplugin.lastfailed
 
-                # Only filter with known failures.
+                # Only skip files after collecting a known failure.
                 if not self._collected_at_least_one_failure:
                     if not any(x.id in lastfailed for x in result):
                         return res
@@ -290,17 +290,6 @@ class LFPluginCollWrapper:
                         LFPluginCollSkipfiles(self.lfplugin), "lfplugin-collskip"
                     )
                     self._collected_at_least_one_failure = True
-
-                session = collector.session
-                result[:] = [
-                    x
-                    for x in result
-                    if x.id in lastfailed
-                    # Include any passed arguments (not trivial to filter).
-                    or session.isinitpath(x.path)
-                    # Keep all sub-collectors.
-                    or isinstance(x, nodes.Collector)
-                ]
 
         return res
 
