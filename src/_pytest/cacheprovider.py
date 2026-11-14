@@ -30,8 +30,6 @@ from _pytest.fixtures import fixture
 from _pytest.fixtures import FixtureRequest
 from _pytest.main import Session
 from _pytest.nodeid import NodeId
-from _pytest.nodes import Directory
-from _pytest.nodes import File
 from _pytest.reports import TestReport
 
 
@@ -263,7 +261,7 @@ class LFPluginCollWrapper:
         self, collector: nodes.Collector
     ) -> Generator[None, CollectReport, CollectReport]:
         res = yield
-        if isinstance(collector, Session | Directory):
+        if isinstance(collector, Session | nodes.Directory):
             # Sort any lf-paths to the beginning.
             lf_paths = self.lfplugin._last_failed_paths
 
@@ -277,7 +275,7 @@ class LFPluginCollWrapper:
                 reverse=True,
             )
 
-        elif isinstance(collector, File):
+        elif isinstance(collector, nodes.File | nodes.Class):
             if collector.path in self.lfplugin._last_failed_paths:
                 result = res.result
                 lastfailed = self.lfplugin.lastfailed
@@ -313,7 +311,7 @@ class LFPluginCollSkipfiles:
     def pytest_make_collect_report(
         self, collector: nodes.Collector
     ) -> CollectReport | None:
-        if isinstance(collector, File):
+        if isinstance(collector, nodes.File):
             if collector.path not in self.lfplugin._last_failed_paths:
                 self.lfplugin._skipped_files += 1
 
